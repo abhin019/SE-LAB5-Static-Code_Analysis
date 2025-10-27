@@ -1,61 +1,69 @@
-import json
-import logging
-from datetime import datetime
+"""Inventory Management System."""
 
-# Global variable
+import ast
+
 stock_data = {}
 
-def addItem(item="default", qty=0, logs=[]):
-    if not item:
-        return
-    stock_data[item] = stock_data.get(item, 0) + qty
-    logs.append("%s: Added %d of %s" % (str(datetime.now()), qty, item))
 
-def removeItem(item, qty):
+def add_item(item, qty=None):
+    """Add a new item to the stock."""
+    if qty is None:
+        qty = []
+    stock_data[item] = qty
+    print(f"Added {item} with quantity {qty}")
+
+
+def remove_item(item):
+    """Remove an item from the stock if it exists."""
     try:
-        stock_data[item] -= qty
-        if stock_data[item] <= 0:
-            del stock_data[item]
-    except:
-        pass
+        del stock_data[item]
+    except KeyError:
+        print(f"Item '{item}' not found in stock.")
 
-def getQty(item):
-    return stock_data[item]
 
-def loadData(file="inventory.json"):
-    f = open(file, "r")
+def get_qty(item):
+    """Get quantity of an item."""
+    return stock_data.get(item, "Item not found")
+
+
+def load_data(filename):
+    """Load stock data from a file safely."""
     global stock_data
-    stock_data = json.loads(f.read())
-    f.close()
+    try:
+        with open(filename, "r", encoding="utf-8") as file:
+            data = file.read()
+            stock_data = ast.literal_eval(data)  # safe alternative to eval
+    except FileNotFoundError:
+        print(f"File '{filename}' not found.")
+    except (ValueError, SyntaxError):
+        print("Invalid data format in file.")
 
-def saveData(file="inventory.json"):
-    f = open(file, "w")
-    f.write(json.dumps(stock_data))
-    f.close()
 
-def printData():
-    print("Items Report")
-    for i in stock_data:
-        print(i, "->", stock_data[i])
+def save_data(filename):
+    """Save stock data to a file."""
+    with open(filename, "w", encoding="utf-8") as file:
+        file.write(str(stock_data))
 
-def checkLowItems(threshold=5):
-    result = []
-    for i in stock_data:
-        if stock_data[i] < threshold:
-            result.append(i)
-    return result
 
-def main():
-    addItem("apple", 10)
-    addItem("banana", -2)
-    addItem(123, "ten")  # invalid types, no check
-    removeItem("apple", 3)
-    removeItem("orange", 1)
-    print("Apple stock:", getQty("apple"))
-    print("Low items:", checkLowItems())
-    saveData()
-    loadData()
-    printData()
-    eval("print('eval used')")  # dangerous
+def print_data():
+    """Print all items and their quantities."""
+    for item, qty in stock_data.items():
+        print(f"{item}: {qty}")
 
-main()
+
+def check_low_items(threshold):
+    """Check for items below the given quantity threshold."""
+    low_items = [item for item, qty in stock_data.items() if qty < threshold]
+    if low_items:
+        print("Low stock items:", ", ".join(low_items))
+    else:
+        print("All items are sufficiently stocked.")
+
+
+if __name__ == "__main__":
+    add_item("Apples", 50)
+    add_item("Oranges", 20)
+    remove_item("Bananas")
+    print_data()
+    # safer alternative to eval
+    ast.literal_eval("{'msg': 'safe test'}")
